@@ -6,7 +6,9 @@ from rest_framework import status
 from .models import Catergory, ProductNew  # Import models here
 from .serializers import ProductSerializer, CategorySerializer  # Create serializer below
 from rest_framework.pagination import PageNumberPagination
-from django.http import Http404
+from django.http import Http404, JsonResponse
+import requests
+from rest_framework.decorators import api_view, permission_classes
 
 # Create your views here.
 class ProductView(APIView):
@@ -152,3 +154,14 @@ class CategoryView(APIView):
         #     categories = [dict(zip(columns, row)) for row in rows]
 
         # return Response(categories, status=status.HTTP_200_OK)
+        
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def fetch_users(request):
+    try:
+        response = requests.get('https://jsonplaceholder.typicode.com/users')
+        response.raise_for_status()  # Raise an error for bad responses
+        users = response.json()
+        return Response({'success': True, 'data': users}, status=status.HTTP_200_OK)
+    except requests.RequestException as e:
+        return Response({'success': False, 'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

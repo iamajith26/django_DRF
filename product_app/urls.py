@@ -1,5 +1,6 @@
 from django.urls import path, include
 from .views import ProductView, CategoryView
+from . import views
 
 urlpatterns = [
 
@@ -16,4 +17,6 @@ urlpatterns = [
     path('update_product/<int:pk>', ProductView.as_view(), name='update_product'),
     path('delete_product/<int:pk>', ProductView.as_view(), name='delete_product'),
     path('activate_product/<int:pk>', ProductView.as_view(), name='activate_product'),
+    
+    path('users', views.fetch_users, name='fetch_users'),
 ]
