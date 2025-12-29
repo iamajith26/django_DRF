@@ -165,3 +165,80 @@ def fetch_users(request):
         return Response({'success': True, 'data': users}, status=status.HTTP_200_OK)
     except requests.RequestException as e:
         return Response({'success': False, 'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+from rest_framework.parsers import MultiPartParser, FormParser
+from .utils import S3Uploader
+
+class FileUploadView(APIView):
+    parser_classes = [MultiPartParser, FormParser]
+    
+    def post(self, request, format=None):
+        file = request.FILES.get('file')
+        
+        if not file:
+            return Response(
+                {'error': 'No file provided'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Validate file size (2MB limit)
+        if file.size > 2 * 1024 * 1024:
+            return Response(
+                {'error': 'File size exceeds 2MB limit'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Upload to S3
+        uploader = S3Uploader()
+        result = uploader.upload_file(file, folder='user-uploads')
+        
+        if result['success']:
+            return Response({
+                'message': 'File uploaded successfully',
+            }, status=status.HTTP_201_CREATED)
+        else:
+            return Response(
+                {'error': result['error']},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+class FileDownloadView(APIView):
+    def get(self, request):
+        file_key = request.data.get('file_key')
+        
+        if not file_key:
+            return Response(
+                {'error': 'File key is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        uploader = S3Uploader()
+        file_content = uploader.generate_presigned_url(file_key)
+        
+        if file_content:
+            return Response({'file_url': file_content}, status=status.HTTP_200_OK)
+        else:
+            return Response(
+                {'error': 'Could not generate presigned URL'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+class FileDeleteView(APIView):
+    def delete(self, request):
+        uploader = S3Uploader()
+        file_key = request.data.get('file_key')
+        
+        if not file_key:
+            return Response(
+                {'error': 'File key is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        result = uploader.delete_file(file_key)
+        
+        if result['success']:
+            return Response({'message': 'File deleted successfully'})
+        else:
+            return Response(
+                {'error': result['error']},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
