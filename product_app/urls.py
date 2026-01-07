@@ -1,5 +1,5 @@
 from django.urls import path, include
-from .views import ProductView, CategoryView, FileUploadView, FileDownloadView, FileDeleteView
+from .views import ProductView, CategoryView, FileUploadView, FileDownloadView, FileDeleteView, CacheManagementView
 from . import views
 
 urlpatterns = [
@@ -17,9 +17,12 @@ urlpatterns = [
     path('update_product/<int:pk>', ProductView.as_view(), name='update_product'),
     path('delete_product/<int:pk>', ProductView.as_view(), name='delete_product'),
     path('activate_product/<int:pk>', ProductView.as_view(), name='activate_product'),
+    
     path('upload_file', FileUploadView.as_view(), name='upload_file'),
     path('download_file', FileDownloadView.as_view(), name='download_file'),
     path('delete_file', FileDeleteView.as_view(), name='delete_file'),
+    
+    path('cache', CacheManagementView.as_view(), name='cache_management'),
     
     path('users', views.fetch_users, name='fetch_users'),
 ]
