@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -56,7 +56,7 @@ class ProductView(APIView):
         # If not in cache, get from database
         paginator = PageNumberPagination()
         paginator.page_size = page_size
-        products = ProductNew.objects.filter(is_active=True).select_related('category').order_by('name')
+        products = ProductNew.objects.filter(is_active=True).select_related('category').order_by('id')
         results = paginator.paginate_queryset(products, request)
         serializer = ProductSerializer(results, many=True)
         response_data = paginator.get_paginated_response(serializer.data).data
@@ -69,6 +69,13 @@ class ProductView(APIView):
     def post(self, request, pk=None, format=None):
         if 'activate_product' in request.path:  # Check if the request is for activation
             return self.activate(request, pk)
+        
+        # Check if user is admin for product creation
+        if not request.user.is_staff:
+            return Response(
+                {'error': 'Access denied. Admin privileges required to create products.'}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
         
         serializer = ProductSerializer(data=request.data)
         if serializer.is_valid():
@@ -147,6 +154,12 @@ class CategoryView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     def post(self, request, pk=None, format=None):
+        # Check if user is admin for product creation
+        if not request.user.is_staff:
+            return Response(
+                {'error': 'Access denied. Admin privileges required to create categories.'}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
         if 'activate_category' in request.path:  # Check if the request is for activation
             return self.activate(request, pk)
         serializer = CategorySerializer(data=request.data)
